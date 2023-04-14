@@ -29,7 +29,7 @@ export class Itaucard {
 
 	getGeneralInfo() {
 		let total: number = -1;
-		let holder, card_name: string = '<none>';
+		let holder, card_name, due_at: string = '<none>';
 
 		let pageText = this._pages[0].getElementsByClassName("textLayer")[0];
 		if(!pageText) {
@@ -52,9 +52,14 @@ export class Itaucard {
 				holder = nodes[i+2].innerText;
 				card_name = nodes[i+6].innerText;
 			}
+
+			// get due at
+			if(text.indexOf("vencimento em") > -1) {
+				due_at = nodes[i + 8].innerText
+			}
 		}
 
-		this.general_info = new GeneralInfo(holder, card_name, total);
+		this.general_info = new GeneralInfo(holder, card_name, total, due_at);
 	}
 
 	getExpenses() {
@@ -201,8 +206,9 @@ class ItaucardAUTOMATA {
 							break;
 						}
 					}
+
 					if(found) {
-						found.total = total;
+						found.card.total = total;
 					} else {
 						let card = new Card("", digits, total);
 						res.push({card: card, side: this.getSide(node), index: -1, page: this.page_n});
@@ -213,6 +219,17 @@ class ItaucardAUTOMATA {
 					let card = new Card(holder, digits);
 					res.push({card: card, side: this.getSide(node), index: i, page: this.page_n});
 				}
+			} else if(text.indexOf("mentos inter.") > 3) { // international purchases
+				let totalEl = this.nodes[i+2];
+				let total = Number(totalEl.innerText.replaceAll(".","").replace(",","."));
+				
+				let lastIdx = 0;
+				for(let j = 0; j < res.length; j++) {
+					if(res[j].card.digits != "xxxx") {
+						lastIdx = j;
+					}
+				}
+				res[lastIdx].card.total = total;
 			}
 		}
 		this.cardsInfo = res;
@@ -242,8 +259,12 @@ class ItaucardAUTOMATA {
 						}
 						value = Number(this.nodes[i+j].innerText.replace(",","."));
 						pos = this.getSide(node);
-						let exp = new Expense(date, value, this.formatName(place), '', total_inst, cur_inst);
-						res.push({expense: exp, side: pos, index: i});
+						if(place.length == 0) { // installment was between place name and value. so we do nothing.
+							
+						} else {
+							let exp = new Expense(date, value, this.formatName(place), '', total_inst, cur_inst);
+							res.push({expense: exp, side: pos, index: i});
+						}
 					} else { // it was not an expense. do nothing
 
 					}
