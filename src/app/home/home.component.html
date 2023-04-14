@@ -1,3 +1,8 @@
 <p>home works!</p>
-<pdf-viewer id="pdf" #pdf [src]="path" [render-text]="true" [original-size]="false" style="width: 800px;height: 800px"></pdf-viewer>
+<div>
+	{{status}}
+</div>
+<pdf-viewer id="pdf" #pdf [src]="path" [render-text]="true" [original-size]="false"
+						style="width: 800px;height: 800px"
+						(after-load-complete)="initting('pdf')"></pdf-viewer>
 <input type="file"/>

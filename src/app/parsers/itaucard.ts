@@ -1,25 +1,38 @@
 import { Expense } from '../models/expense';
 import { Card } from '../models/card';
 
+import { Utils } from '../helpers/utils';
+
 const dateRegex = /^\d{2}\/\d{2}$/;
 const valueRegex = /^\d+\,\d{2}$/;
 
+type RawExpense = {expense: Expense, side: 'l'|'r', index: number};
+type RawCard = {card: Card, side: 'l'|'r', index: number, page: number};
+
 export class Itaucard {
-	pdfEl: HTMLElement;
-	pages: any = [];
+	private _pdfEl: HTMLElement;
+	private _pages: any = [];
+	private _rawExpenses: RawExpense[] = [];
+	private _rawCards: RawCard[] = [];
+	private _curCard: Card|null = null;
+	private _curCardIdx: number = 0;
+
+	cards: Card[] = [];
 
 	constructor(pdfEl: HTMLElement) {
-		this.pdfEl = pdfEl;
-		this.pages = this.pdfEl.getElementsByClassName("page");
+		this._pdfEl = pdfEl;
+		this._pages = this._pdfEl.getElementsByClassName("page");
 		this.expenses();
 	}
 
 	expenses(): Expense[] {
 		let res: Expense[] = [];
 
-		for(let i = 2; i < 3/*this.pages.length*/; i++) {
-			this.fetchPage(this.pages[i], i);
+		for(let i = 1; i < this._pages.length; i++) {
+			this.fetchPage(this._pages[i], i);
 		}
+		console.log(this._rawExpenses);
+		console.log(this._rawCards);
 
 		return res;
 	}
@@ -27,29 +40,102 @@ export class Itaucard {
 	fetchPage(page: any, index: number) {
 		let pageText = page.getElementsByClassName("textLayer")[0];
 		if(!pageText) {
+			console.log(page);
 			throw new Error(`Can't read page ${index}`);
 		}
 		let nodes = pageText.children;
-		let automata = new ItaucardAUTOMATA(nodes, page.clientWidth);
-		let expenses = automata.expenses();
-		let cards = automata.cards();
-		console.log(expenses);
-		console.log(cards);
+		let automata = new ItaucardAUTOMATA(nodes, page.clientWidth, index);
+		this._rawExpenses = this._rawExpenses.concat(automata.expenses());
+
+		// add to _rawCards first by left side, then by right side
+		for(let rawCard of automata.cards()) {
+			if(rawCard.side == 'l') {
+				if(rawCard.card.holder.length > 0) {
+					this._rawCards.push(rawCard);
+				} else {
+					let found = this._findInCards(rawCard.card.digits);
+					if(found) {
+						found.card.total = rawCard.card.total;
+					} else {
+						console.error("Invalid card: ", rawCard);
+					}
+				}
+			}
+		}
+		for(let rawCard of automata.cards()) {
+			if(rawCard.side == 'r') {
+				if(rawCard.card.holder.length > 0) {
+					this._rawCards.push(rawCard);
+				} else {
+					let found = this._findInCards(rawCard.card.digits);
+					if(found) {
+						found.card.total = rawCard.card.total;
+					} else {
+						console.error("Invalid card: ", rawCard);
+					}
+				}
+			}
+		}
+
+		if(this._curCard == null) {
+			this._curCardIdx = 0;
+			this._curCard = this._rawCards[this._curCardIdx].card;
+		}
+
+		this.parsePage('l', index);
+		this.parsePage('r', index);
+	}
+
+	parsePage(side: 'l'|'r', page_n: number) {
+		let nextCard = this._rawCards[this._curCardIdx + 1];
+		let lastIdx = 999999;
+		let changed = false;
+
+		console.log(this._curCard, nextCard, page_n)
+		if(nextCard && nextCard.side == side && page_n >= nextCard.page) {
+			lastIdx = nextCard.index;
+		}
+		for(let rawExp of this._rawExpenses) {
+			if(rawExp.side == side) {
+				if(rawExp.index < lastIdx) {
+					rawExp.expense.card = this._curCard;
+				} else {
+					changed = true;
+					rawExp.expense.card = nextCard.card;
+				}
+			}
+		}
+		if(changed) {
+			this._curCardIdx += 1;
+			this._curCard = this._rawCards[this._curCardIdx].card;
+		}
+	}
+
+	private _findInCards(digits: string): RawCard|null {
+		let found = null;
+		for(let aux of this._rawCards) {
+			if(aux.card.digits == digits) {
+				return aux;
+			}
+		}
+		return null;
 	}
 }
 
 class ItaucardAUTOMATA {
 	nodes: any[];
 	width: number;
+	page_n: number;
 
 	cardsInfo: {card: Card, side: 'l'|'r', index: number}[] = [];
 
-	constructor(nodes: [], pageWidth: number) {
+	constructor(nodes: [], pageWidth: number, page_n: number) {
 		this.nodes = nodes;
 		this.width = pageWidth;
+		this.page_n = page_n;
 	}
 
-	cards(): {card: Card, side: 'l'|'r', index: number}[] {
+	cards(): RawCard[] {
 		let res: any[] = [];
 
 		for(let i = 0; i < this.nodes.length - 1; i++) {
@@ -74,13 +160,13 @@ class ItaucardAUTOMATA {
 						found.total = total;
 					} else {
 						let card = new Card("", digits, total);
-						res.push({card: card, side: this.getSide(node), index: i});
+						res.push({card: card, side: this.getSide(node), index: -1, page: this.page_n});
 					}
 				} else { // is card header
 					holder = arr[0];
 
 					let card = new Card(holder, digits);
-					res.push({card: card, side: this.getSide(node), index: i});
+					res.push({card: card, side: this.getSide(node), index: i, page: this.page_n});
 				}
 			}
 		}
@@ -88,7 +174,7 @@ class ItaucardAUTOMATA {
 		return res;
 	}
 
-	expenses(): {expense: Expense, side: 'l'|'r', index: number}[] {
+	expenses(): RawExpense[] {
 		let res: any = [];
 		for(let i = 0; i < this.nodes.length - 5; i++) {
 			let date, value, total_inst = 1, cur_inst = 1, place, place_description = '', pos;
@@ -113,8 +199,8 @@ class ItaucardAUTOMATA {
 						pos = this.getSide(node);
 						let exp = new Expense(date, value, this.formatName(place), '', total_inst, cur_inst);
 						res.push({expense: exp, side: pos, index: i});
-					} else { // it was not an expense. abort
-						console.error("It was not an expense: ", node);
+					} else { // it was not an expense. do nothing
+
 					}
 				}
 			}
