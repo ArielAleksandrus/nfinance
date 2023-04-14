@@ -1,7 +1,6 @@
 import { Expense } from '../models/expense';
 import { Card } from '../models/card';
-
-import { Utils } from '../helpers/utils';
+import { GeneralInfo } from '../models/general-info';
 
 const dateRegex = /^\d{2}\/\d{2}$/;
 const valueRegex = /^\d+\,\d{2}$/;
@@ -18,29 +17,75 @@ export class Itaucard {
 	private _curCardIdx: number = 0;
 
 	cards: Card[] = [];
+	expenses: Expense[] = [];
+	general_info: GeneralInfo|null = null;
 
 	constructor(pdfEl: HTMLElement) {
 		this._pdfEl = pdfEl;
 		this._pages = this._pdfEl.getElementsByClassName("page");
-		this.expenses();
+		this.getGeneralInfo();
+		this.getExpenses();
 	}
 
-	expenses(): Expense[] {
-		let res: Expense[] = [];
+	getGeneralInfo() {
+		let total: number = -1;
+		let holder, card_name: string = '<none>';
 
+		let pageText = this._pages[0].getElementsByClassName("textLayer")[0];
+		if(!pageText) {
+			console.log(this._pages[0]);
+			throw new Error(`Can't read page 0`);
+		}
+		let nodes = pageText.children;
+		for(let i = 0; i < nodes.length; i++) {
+			let node = nodes[i];
+			let text = node.innerText.toLowerCase();
+
+			// get total
+			if(text.indexOf("total da sua fatura") > -1) {
+				let totalText = nodes[i+8].innerText;
+				total = Number(totalText.split(" ")[1].replaceAll(".","").replace(",","."));
+			}
+
+			// get holder name
+			if(text == "titular") {
+				holder = nodes[i+2].innerText;
+				card_name = nodes[i+6].innerText;
+			}
+		}
+
+		this.general_info = new GeneralInfo(holder, card_name, total);
+	}
+
+	getExpenses() {
 		for(let i = 1; i < this._pages.length; i++) {
 			this.fetchPage(this._pages[i], i);
 		}
-		console.log(this._rawExpenses);
-		console.log(this._rawCards);
+		
+		this.cards = [];
+		for(let rawCard of this._rawCards) {
+			let card = rawCard.card;
+			if(card.digits != "xxxx") {
+				this.cards.push(card);
+			}
+		}
 
-		return res;
+		this.expenses = [];
+		for(let rawExpense of this._rawExpenses) {
+			let expense = rawExpense.expense;
+			if(expense.card == null) {
+				console.error("Expense has no card attached: ", expense);
+			} else {
+				if(expense.card.digits != "xxxx") {
+					this.expenses.push(expense);
+				}
+			}
+		}
 	}
 
 	fetchPage(page: any, index: number) {
 		let pageText = page.getElementsByClassName("textLayer")[0];
 		if(!pageText) {
-			console.log(page);
 			throw new Error(`Can't read page ${index}`);
 		}
 		let nodes = pageText.children;
@@ -95,7 +140,6 @@ export class Itaucard {
 
 			// change card
 			if(nextCard && nextCard.page == page_n && nextCard.side == side && rawExp.index > nextCard.index) {
-				console.log("changed", page_n, side, rawExp);
 				this._curCardIdx += 1;
 				this._curCard = nextCard;
 				nextCard = this._rawCards[this._curCardIdx + 1];
