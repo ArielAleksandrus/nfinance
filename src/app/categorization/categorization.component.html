@@ -1,3 +1,4 @@
+<button mat-button mat-dialog-close cdkFocusInitial>Ok</button>
 <mat-accordion multi>
 	<!-- Cards panel -->
 	<mat-expansion-panel>
@@ -45,7 +46,7 @@
 			<mat-panel-description>Selecione os gastos que deseja categorizar</mat-panel-description>
 		</mat-expansion-panel-header>
 
-		<table *ngIf="auxExpenses.length > 0" mat-table [dataSource]="auxExpenses">
+		<table *ngIf="auxExpenses.length > 0" mat-table [dataSource]="auxExpenses" style="cursor: pointer">
 			<!-- date column -->
 			<ng-container matColumnDef="date">
 				<th mat-header-cell *matHeaderCellDef>Data</th>
@@ -78,16 +79,8 @@
 				<td mat-cell *matCellDef="let el">{{el.card.digits}}</td>
 			</ng-container>
 
-			<!-- button column -->
-			<!--<ng-container matColumnDef="category">
-				<th mat-header-cell *matHeaderCellDef>Categoria</th>
-				<td mat-cell *matCellDef="let el">
-					<mat-slide-toggle [(ngModel)]="el.active" (change)="activeChanged(el)"></mat-slide-toggle>
-				</td>
-			</ng-container>-->
-
 			<tr mat-header-row *matHeaderRowDef="expenseColumns"></tr>
-			<tr mat-row *matRowDef="let row; columns: expenseColumns;"></tr>
+			<tr mat-row *matRowDef="let row; columns: expenseColumns;" (click)="clickExpense(row)"></tr>
 		</table>
 	</mat-expansion-panel>
 </mat-accordion>

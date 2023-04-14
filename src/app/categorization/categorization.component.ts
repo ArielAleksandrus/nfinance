@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+
 
 import { Itaucard } from '../parsers/itaucard';
 
@@ -26,7 +28,8 @@ export class CategorizationComponent {
 
   categories: ExpenseCategory[] = [];
 
-  constructor(private router: Router,
+  constructor(public dialog: MatDialog,
+    private router: Router,
     private route: ActivatedRoute) {
 
     route.params.subscribe(res => {
@@ -49,13 +52,26 @@ export class CategorizationComponent {
     } else {
       alert("Este documento não foi localizado");
     }
-    
-    console.log(this.itau);
   }
 
   activeChanged(card: Card) {
     this.saveChanges();
     this._cardChanges();
+  }
+
+  clickExpense(exp: Expense) {
+    this.openExpenseDialog(exp);
+  }
+
+  openExpenseDialog(exp: Expense) {
+    this.dialog.open(CategoryDialog, {
+      width: '350px',
+      enterAnimationDuration: '150ms',
+      exitAnimationDuration: '150ms',
+      data: {expense: exp}
+    }).afterClosed().subscribe(data => {
+      console.log(data);
+    });
   }
 
   saveChanges() {
@@ -87,5 +103,31 @@ export class CategorizationComponent {
       if(card.active)
         this.auxExpenses.push(exp);
     }
+  }
+}
+
+@Component({
+  selector: 'category-dialog',
+  templateUrl: 'category-dialog.html',
+})
+export class CategoryDialog {
+  filtersList: any[] = ['matches', 'begins_with', 'ends_with', 'contains'];
+  filtersLabel: any[] = ['todos dessa loja', 'começa com esta palavra', 'termina com esta palavra', 'contém esta palavra'];
+  term: string = '';
+  filter: any = 'matches';
+  tag_as: string = '';
+  constructor(public dialogRef: MatDialogRef<CategoryDialog>,
+    @Inject(MAT_DIALOG_DATA) public data: {expense: Expense}) {}
+
+  onSend() {
+    let termEl: any = document.getElementById('termEl');
+    this.term = termEl.value;
+    let tagAsEl: any = document.getElementById('tagAsEl');
+    this.tag_as = tagAsEl.value;
+    this.dialogRef.close({
+      term: this.term,
+      filter: this.filter,
+      tag_as: this.tag_as
+    });
   }
 }

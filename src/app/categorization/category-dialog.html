@@ -1,0 +1,21 @@
+<h1 mat-dialog-title>Delete file</h1>
+<div mat-dialog-content>
+  <mat-form-field appearance="fill">
+    <mat-label>Tipo</mat-label>
+    <mat-select [(value)]="filter">
+      <mat-option *ngFor="let filter of filtersList; let i = index" [value]="filter">{{filtersLabel[i]}}</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Loja</mat-label>
+    <input id="termEl" matInput [value]="data.expense.place">
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Marcar como:</mat-label>
+    <input id="tagAsEl" matInput>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions>
+  <button mat-button mat-dialog-close>Voltar</button>
+  <button mat-button (click)="onSend()">Ok</button>
+</div>
