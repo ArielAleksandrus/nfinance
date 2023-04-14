@@ -14,7 +14,7 @@ export class Itaucard {
 	private _pages: any = [];
 	private _rawExpenses: RawExpense[] = [];
 	private _rawCards: RawCard[] = [];
-	private _curCard: Card|null = null;
+	private _curCard: any = null;
 	private _curCardIdx: number = 0;
 
 	cards: Card[] = [];
@@ -45,7 +45,6 @@ export class Itaucard {
 		}
 		let nodes = pageText.children;
 		let automata = new ItaucardAUTOMATA(nodes, page.clientWidth, index);
-		this._rawExpenses = this._rawExpenses.concat(automata.expenses());
 
 		// add to _rawCards first by left side, then by right side
 		for(let rawCard of automata.cards()) {
@@ -79,36 +78,35 @@ export class Itaucard {
 
 		if(this._curCard == null) {
 			this._curCardIdx = 0;
-			this._curCard = this._rawCards[this._curCardIdx].card;
+			this._curCard = this._rawCards[this._curCardIdx];
 		}
 
-		this.parsePage('l', index);
-		this.parsePage('r', index);
+		let expenses = automata.expenses();
+		this.parsePage('l', index, expenses);
+		this.parsePage('r', index, expenses);
 	}
 
-	parsePage(side: 'l'|'r', page_n: number) {
-		let nextCard = this._rawCards[this._curCardIdx + 1];
-		let lastIdx = 999999;
-		let changed = false;
+	parsePage(side: 'l'|'r', page_n: number, expenses: RawExpense[]) {
+		let sideMatches: RawExpense[] = [];
 
-		console.log(this._curCard, nextCard, page_n)
-		if(nextCard && nextCard.side == side && page_n >= nextCard.page) {
-			lastIdx = nextCard.index;
-		}
-		for(let rawExp of this._rawExpenses) {
-			if(rawExp.side == side) {
-				if(rawExp.index < lastIdx) {
-					rawExp.expense.card = this._curCard;
-				} else {
-					changed = true;
-					rawExp.expense.card = nextCard.card;
-				}
+		let nextCard: any = this._rawCards[this._curCardIdx + 1];
+		for(let i = 0; i < expenses.length; i++) {
+			let rawExp = expenses[i];
+
+			// change card
+			if(nextCard && nextCard.page == page_n && nextCard.side == side && rawExp.index > nextCard.index) {
+				console.log("changed", page_n, side, rawExp);
+				this._curCardIdx += 1;
+				this._curCard = nextCard;
+				nextCard = this._rawCards[this._curCardIdx + 1];
+			}
+			if(expenses[i].side == side) {
+				expenses[i].expense.card = this._rawCards[this._curCardIdx].card;
+				sideMatches.push(expenses[i]);
 			}
 		}
-		if(changed) {
-			this._curCardIdx += 1;
-			this._curCard = this._rawCards[this._curCardIdx].card;
-		}
+
+		this._rawExpenses = this._rawExpenses.concat(sideMatches);
 	}
 
 	private _findInCards(digits: string): RawCard|null {
@@ -142,7 +140,10 @@ class ItaucardAUTOMATA {
 			let holder, digits, pos;
 			let node = this.nodes[i];
 			let text = node.innerText;
-			if(text.indexOf(" (final ") > 5) { // current node is card info
+			if(text.indexOf("ximas faturas") > 0) { // current node is future purchases
+				let card = new Card("Lançamentos futuros", "xxxx", 0);
+				res.push({card: card, side: this.getSide(node), index: i, page: this.page_n});
+			} else if(text.indexOf(" (final ") > 5) { // current node is card info
 				let arr = text.split(" (final ");
 				digits = arr[1].split(")")[0];
 				
