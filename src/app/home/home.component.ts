@@ -1,4 +1,6 @@
 import { Component, ViewChild } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+
 import { PdfViewerComponent } from 'ng2-pdf-viewer';
 
 import { Itaucard } from '../parsers/itaucard';
@@ -15,7 +17,10 @@ export class HomeComponent {
   curPage: number = 1;
   totalPages: number = 0;
 
-  constructor() {
+  itau: Itaucard|null = null;
+
+  constructor(private router: Router,
+    private route: ActivatedRoute) {
 
   }
 
@@ -56,8 +61,16 @@ export class HomeComponent {
   parse() {
     let el = document.getElementById("pdf");
     if(!!el){
-      new Itaucard(el);
-    } else
+      this.itau = new Itaucard(el);
+    } else {
       throw new Error("No pdf rendered");
+    }
+
+    if(this.itau && this.itau.general_info) {
+      let cardName = this.itau.general_info.card_name;
+      let key = cardName.split(".")[3] + " " + this.itau.general_info.due_at;
+      sessionStorage.setItem(key, JSON.stringify(this.itau));
+      this.router.navigate(['categorizar', key]);
+    }
   }
 }

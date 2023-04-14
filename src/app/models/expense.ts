@@ -21,3 +21,22 @@ export class Expense {
 		this.card = card;
 	}
 }
+export class ExpenseCategory {
+	expense: Expense;
+	matches: string|null;
+	begins_with: string|null;
+	ends_with: string|null;
+	contains: string|null;
+
+	tag_as: string[];
+
+	constructor(expense: Expense, tag_as: string[], matches: string|null = null,
+							begins_with: string|null = null, ends_with: string|null = null, contains: string|null = null) {
+		this.expense = expense;
+		this.tag_as = tag_as;
+		this.matches = matches;
+		this.begins_with = begins_with;
+		this.ends_with = ends_with;
+		this.contains = contains;
+	}
+}

@@ -1,0 +1,93 @@
+<mat-accordion multi>
+	<!-- Cards panel -->
+	<mat-expansion-panel>
+		<mat-expansion-panel-header>
+			<mat-panel-title>Cartões</mat-panel-title>
+			<mat-panel-description>Selecione os cartões que deseja analisar</mat-panel-description>
+		</mat-expansion-panel-header>
+
+		<table *ngIf="itau && itau.cards" mat-table [dataSource]="itau.cards">
+			<!-- holder column -->
+			<ng-container matColumnDef="holder">
+				<th mat-header-cell *matHeaderCellDef>Nome</th>
+				<td mat-cell *matCellDef="let el">{{el.holder}}</td>
+			</ng-container>
+
+			<!-- digits column -->
+			<ng-container matColumnDef="digits">
+				<th mat-header-cell *matHeaderCellDef>Final</th>
+				<td mat-cell *matCellDef="let el">{{el.digits}}</td>
+			</ng-container>
+
+			<!-- total column -->
+			<ng-container matColumnDef="total">
+				<th mat-header-cell *matHeaderCellDef>Total</th>
+				<td mat-cell *matCellDef="let el">{{el.total | currency:'BRL'}}</td>
+			</ng-container>
+
+			<!-- button column -->
+			<ng-container matColumnDef="active">
+				<th mat-header-cell *matHeaderCellDef>Selecionar</th>
+				<td mat-cell *matCellDef="let el">
+					<mat-slide-toggle [(ngModel)]="el.active" (change)="activeChanged(el)"></mat-slide-toggle>
+				</td>
+			</ng-container>
+
+			<tr mat-header-row *matHeaderRowDef="cardColumns"></tr>
+			<tr mat-row *matRowDef="let row; columns: cardColumns;"></tr>
+		</table>
+	</mat-expansion-panel>
+
+	<!-- Expenses panel -->
+	<mat-expansion-panel>
+		<mat-expansion-panel-header>
+			<mat-panel-title>Gastos</mat-panel-title>
+			<mat-panel-description>Selecione os gastos que deseja categorizar</mat-panel-description>
+		</mat-expansion-panel-header>
+
+		<table *ngIf="auxExpenses.length > 0" mat-table [dataSource]="auxExpenses">
+			<!-- date column -->
+			<ng-container matColumnDef="date">
+				<th mat-header-cell *matHeaderCellDef>Data</th>
+				<td mat-cell *matCellDef="let el">{{el.date}}</td>
+			</ng-container>
+
+			<!-- holder column -->
+			<ng-container matColumnDef="place">
+				<th mat-header-cell *matHeaderCellDef>Loja</th>
+				<td mat-cell *matCellDef="let el">{{el.place}}</td>
+			</ng-container>
+
+			<!-- value column -->
+			<ng-container matColumnDef="value">
+				<th mat-header-cell *matHeaderCellDef>Valor</th>
+				<td mat-cell *matCellDef="let el">{{el.value | currency:'BRL'}}</td>
+			</ng-container>
+
+			<!-- installment column -->
+			<ng-container matColumnDef="installment">
+				<th mat-header-cell *matHeaderCellDef style="min-width: 7em;">Parcela</th>
+				<td mat-cell *matCellDef="let el">
+					{{el.total_installments > 1 ? el.cur_installment + ' de ' + el.total_installments : ' '}}
+				</td>
+			</ng-container>
+
+			<!-- digits column -->
+			<ng-container matColumnDef="digits">
+				<th mat-header-cell *matHeaderCellDef>Final</th>
+				<td mat-cell *matCellDef="let el">{{el.card.digits}}</td>
+			</ng-container>
+
+			<!-- button column -->
+			<!--<ng-container matColumnDef="category">
+				<th mat-header-cell *matHeaderCellDef>Categoria</th>
+				<td mat-cell *matCellDef="let el">
+					<mat-slide-toggle [(ngModel)]="el.active" (change)="activeChanged(el)"></mat-slide-toggle>
+				</td>
+			</ng-container>-->
+
+			<tr mat-header-row *matHeaderRowDef="expenseColumns"></tr>
+			<tr mat-row *matRowDef="let row; columns: expenseColumns;"></tr>
+		</table>
+	</mat-expansion-panel>
+</mat-accordion>

@@ -4,10 +4,14 @@ export class Card {
 	total: number;
 	parent: Card|null;
 
-	constructor(holder: string, digits: string, total: number = 0, parent: Card|null = null) {
+	// user interaction
+	active: boolean;
+
+	constructor(holder: string, digits: string, total: number = 0, parent: Card|null = null, active: boolean = true) {
 		this.holder = holder;
 		this.digits = digits;
 		this.total = total;
 		this.parent = parent;
+		this.active = active;
 	}
 }
