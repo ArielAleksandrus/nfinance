@@ -6,7 +6,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
 import { Itaucard } from '../parsers/itaucard';
 
 import { Card } from '../models/card';
-import { Expense, ExpenseCategory } from '../models/expense';
+import { Expense, ExpenseCategory, FilterType } from '../models/expense';
 
 import { Utils } from '../helpers/utils';
 
@@ -15,6 +15,7 @@ import { Utils } from '../helpers/utils';
   templateUrl: './categorization.component.html',
   styleUrls: ['./categorization.component.sass']
 })
+
 export class CategorizationComponent {
   key: string|null = null;
 
@@ -52,6 +53,17 @@ export class CategorizationComponent {
     } else {
       alert("Este documento não foi localizado");
     }
+
+    let res2 = localStorage.getItem('categories');
+    if(res2) {
+      let obj = JSON.parse(res2);
+      this.categories = obj as ExpenseCategory[];
+      for(let cat of this.categories) {
+        if(this.itau)
+          cat.applyToAllExpenses(this.itau.expenses);
+        cat.applyToAllExpenses(this.auxExpenses);
+      }
+    }
   }
 
   activeChanged(card: Card) {
@@ -70,7 +82,7 @@ export class CategorizationComponent {
       exitAnimationDuration: '150ms',
       data: {expense: exp}
     }).afterClosed().subscribe(data => {
-      console.log(data);
+      this._categoryCreated(data);
     });
   }
 
@@ -80,6 +92,23 @@ export class CategorizationComponent {
       return;
     }
     sessionStorage.setItem(this.key, JSON.stringify(this.itau));
+  }
+
+  private _categoryCreated(data: {term: string, filter: FilterType, tag_as: string[], expense: Expense}) {
+    for(let i = 0; i < data.tag_as.length; i++) {
+      if(data.tag_as[i].length == 0) {
+        data.tag_as.splice(i,1);
+      }
+    }
+    let cat = new ExpenseCategory(data.tag_as, data.filter, data.term);
+
+    if(this.itau)
+      cat.applyToAllExpenses(this.itau.expenses);
+
+    cat.applyToAllExpenses(this.auxExpenses);
+
+    this.categories.push(cat);
+    localStorage.setItem('categories', JSON.stringify(this.categories));
   }
 
   private _cardChanges() {
@@ -114,20 +143,25 @@ export class CategoryDialog {
   filtersList: any[] = ['matches', 'begins_with', 'ends_with', 'contains'];
   filtersLabel: any[] = ['todos dessa loja', 'começa com esta palavra', 'termina com esta palavra', 'contém esta palavra'];
   term: string = '';
-  filter: any = 'matches';
-  tag_as: string = '';
+  filter: FilterType = 'matches';
+  tag_as: string[] = ['','',''];
   constructor(public dialogRef: MatDialogRef<CategoryDialog>,
     @Inject(MAT_DIALOG_DATA) public data: {expense: Expense}) {}
 
   onSend() {
     let termEl: any = document.getElementById('termEl');
     this.term = termEl.value;
-    let tagAsEl: any = document.getElementById('tagAsEl');
-    this.tag_as = tagAsEl.value;
+    let tagAsEl1: any = document.getElementById('tagAsEl1');
+    this.tag_as[0] = tagAsEl1.value;
+    /*let tagAsEl2: any = document.getElementById('tagAsEl2');
+    this.tag_as[1] = tagAsEl2.value;
+    let tagAsEl3: any = document.getElementById('tagAsEl3');
+    this.tag_as[2] = tagAsEl3.value;*/
     this.dialogRef.close({
       term: this.term,
       filter: this.filter,
-      tag_as: this.tag_as
+      tag_as: this.tag_as,
+      expense: this.data.expense
     });
   }
 }

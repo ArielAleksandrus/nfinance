@@ -1,4 +1,5 @@
 export class Card {
+	uuid: string;
 	holder: string;
 	digits: string;
 	total: number;
@@ -8,6 +9,7 @@ export class Card {
 	active: boolean;
 
 	constructor(holder: string, digits: string, total: number = 0, parent: Card|null = null, active: boolean = true) {
+		this.uuid = URL.createObjectURL(new Blob([])).slice(-36);
 		this.holder = holder;
 		this.digits = digits;
 		this.total = total;

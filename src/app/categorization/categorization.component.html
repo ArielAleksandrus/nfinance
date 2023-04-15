@@ -80,7 +80,7 @@
 			</ng-container>
 
 			<tr mat-header-row *matHeaderRowDef="expenseColumns"></tr>
-			<tr mat-row *matRowDef="let row; columns: expenseColumns;" (click)="clickExpense(row)"></tr>
+			<tr mat-row *matRowDef="let row; columns: expenseColumns;" (click)="clickExpense(row)"  [class.success]="row.categories.length > 0"></tr>
 		</table>
 	</mat-expansion-panel>
 </mat-accordion>
