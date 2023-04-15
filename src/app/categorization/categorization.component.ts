@@ -1,9 +1,9 @@
-import { Component, Inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { CategoryDialog } from './category-dialog';
 
-
-import { Itaucard } from '../parsers/itaucard';
+import { Parser } from '../parsers/parser';
 
 import { Card } from '../models/card';
 import { Expense, ExpenseCategory, FilterType } from '../models/expense';
@@ -19,7 +19,7 @@ import { Utils } from '../helpers/utils';
 export class CategorizationComponent {
   key: string|null = null;
 
-  itau: Itaucard|null = null;
+  parser: Parser|null = null;
   auxExpenses: Expense[] = [];
 
 
@@ -49,7 +49,7 @@ export class CategorizationComponent {
     let res = sessionStorage.getItem(this.key || '<none>');
     if(res) {
       let obj = JSON.parse(res);
-      this.itau = obj as Itaucard;
+      this.parser = obj as Parser;
       this._cardChanges();
     } else {
       alert("Este documento não foi localizado");
@@ -62,8 +62,8 @@ export class CategorizationComponent {
       console.log(this.categories);
       for(let cat of this.categories) {
         cat = new ExpenseCategory(cat.tag_as, cat.filter_type, cat.term || '<none>');
-        if(this.itau)
-          cat.applyToAllExpenses(this.itau.expenses);
+        if(this.parser)
+          cat.applyToAllExpenses(this.parser.expenses);
         cat.applyToAllExpenses(this.auxExpenses);
       }
     }
@@ -74,19 +74,30 @@ export class CategorizationComponent {
     this._cardChanges();
   }
 
-  clickExpense(exp: Expense) {
-    this.openExpenseDialog(exp);
-  }
-
-  openExpenseDialog(exp: Expense) {
+  clickExpense(obj: Expense) {
     this.dialog.open(CategoryDialog, {
       width: '350px',
       enterAnimationDuration: '150ms',
       exitAnimationDuration: '150ms',
-      data: {expense: exp}
+      data: {expense: obj}
     }).afterClosed().subscribe(data => {
+      if(data == '') return;
       this._categoryCreated(data);
     });
+  }
+  clickCategory(obj: ExpenseCategory) {
+    this.dialog.open(CategoryDialog, {
+      width: '350px',
+      enterAnimationDuration: '150ms',
+      exitAnimationDuration: '150ms',
+      data: {category: obj}
+    }).afterClosed().subscribe(data => {
+      if(data == '') return;
+      this._categoryEdited(obj.uuid, data);
+    });
+  }
+
+  openExpenseDialog(exp: Expense) {
   }
 
   saveChanges() {
@@ -94,10 +105,10 @@ export class CategorizationComponent {
       alert("Este documento não foi localizado");
       return;
     }
-    sessionStorage.setItem(this.key, JSON.stringify(this.itau));
+    sessionStorage.setItem(this.key, JSON.stringify(this.parser));
   }
 
-  private _categoryCreated(data: {term: string, filter: FilterType, tag_as: string[], expense: Expense}) {
+  private _categoryCreated(data: {term: string, filter: FilterType, tag_as: string[]}) {
     for(let i = 0; i < data.tag_as.length; i++) {
       if(data.tag_as[i].length == 0) {
         data.tag_as.splice(i,1);
@@ -106,66 +117,51 @@ export class CategorizationComponent {
     }
     let cat = new ExpenseCategory(data.tag_as, data.filter, data.term);
 
-    if(this.itau)
-      cat.applyToAllExpenses(this.itau.expenses);
+    this._applyCategory(cat);
+  }
+  private _categoryEdited(uuid: string, data: {term: string, filter: FilterType, tag_as: string[], remove: boolean}) {
+    this._removeCategory(uuid);
+    if(!data.remove) {
+      this._categoryCreated(data);
+    }
+  }
+  private _removeCategory(uuid: string) {
+    let cat: ExpenseCategory = Utils.findById(this.categories, uuid, 'uuid');
+    console.log(cat);
+    if(this.parser) {
+      cat.applyToAllExpenses(this.parser.expenses, true);
+    }
+    cat.applyToAllExpenses(this.auxExpenses, true);
+  }
+
+  private _applyCategory(cat: ExpenseCategory) {
+    if(this.parser)
+      cat.applyToAllExpenses(this.parser.expenses);
 
     cat.applyToAllExpenses(this.auxExpenses);
-
-    this.categories.push(cat);
     localStorage.setItem('categories', JSON.stringify(this.categories));
   }
 
   private _cardChanges() {
-    if(!this.itau) {
+    if(!this.parser) {
       alert("Este documento não foi tratado. Verifique se há suporte para este banco");
       return;
     }
     this.nCardsSelected = 0;
     this.auxExpenses = [];
-    for(let card of this.itau.cards) {
+    for(let card of this.parser.cards) {
       if(card.active) {
         this.nCardsSelected += 1;
       }
     }
-    for(let exp of this.itau.expenses) {
+    for(let exp of this.parser.expenses) {
       if(!exp.card) {
         console.error("Expense has no card", exp);
         return;
       }
-      let card = Utils.findById(this.itau.cards, exp.card.digits, 'digits');
+      let card = Utils.findById(this.parser.cards, exp.card.digits, 'digits');
       if(card.active)
         this.auxExpenses.push(exp);
     }
-  }
-}
-
-@Component({
-  selector: 'category-dialog',
-  templateUrl: 'category-dialog.html',
-})
-export class CategoryDialog {
-  filtersList: any[] = ['matches', 'begins_with', 'ends_with', 'contains'];
-  filtersLabel: any[] = ['todos dessa loja', 'começa com esta palavra', 'termina com esta palavra', 'contém esta palavra'];
-  term: string = '';
-  filter: FilterType = 'matches';
-  tag_as: string[] = ['','',''];
-  constructor(public dialogRef: MatDialogRef<CategoryDialog>,
-    @Inject(MAT_DIALOG_DATA) public data: {expense: Expense}) {}
-
-  onSend() {
-    let termEl: any = document.getElementById('termEl');
-    this.term = termEl.value;
-    let tagAsEl1: any = document.getElementById('tagAsEl1');
-    this.tag_as[0] = tagAsEl1.value;
-    /*let tagAsEl2: any = document.getElementById('tagAsEl2');
-    this.tag_as[1] = tagAsEl2.value;
-    let tagAsEl3: any = document.getElementById('tagAsEl3');
-    this.tag_as[2] = tagAsEl3.value;*/
-    this.dialogRef.close({
-      term: this.term,
-      filter: this.filter,
-      tag_as: this.tag_as,
-      expense: this.data.expense
-    });
   }
 }

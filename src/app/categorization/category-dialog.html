@@ -8,7 +8,7 @@
   </mat-form-field>
   <mat-form-field appearance="fill">
     <mat-label>Loja</mat-label>
-    <input id="termEl" matInput [value]="data.expense.place">
+    <input id="termEl" matInput>
   </mat-form-field>
   <mat-form-field appearance="fill">
     <mat-label>Tag principal:</mat-label>
@@ -24,6 +24,7 @@
   </mat-form-field>-->
 </div>
 <div mat-dialog-actions>
+  <button mat-button (click)="onRemove()" *ngIf="data.category">DELETAR</button>
   <button mat-button mat-dialog-close>Voltar</button>
-  <button mat-button (click)="onSend()">Ok</button>
+  <button mat-button (click)="onSend()">Enviar</button>
 </div>

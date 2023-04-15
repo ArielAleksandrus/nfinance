@@ -1,3 +1,4 @@
+import { Parser } from './parser';
 import { Expense } from '../models/expense';
 import { Card } from '../models/card';
 import { GeneralInfo } from '../models/general-info';
@@ -8,7 +9,7 @@ const valueRegex = /^\d+\,\d{2}$/;
 type RawExpense = {expense: Expense, side: 'l'|'r', index: number};
 type RawCard = {card: Card, side: 'l'|'r', index: number, page: number};
 
-export class Itaucard {
+export class Itaucard extends Parser {
 	private _pdfEl: HTMLElement;
 	private _pages: any = [];
 	private _rawExpenses: RawExpense[] = [];
@@ -16,18 +17,15 @@ export class Itaucard {
 	private _curCard: any = null;
 	private _curCardIdx: number = 0;
 
-	cards: Card[] = [];
-	expenses: Expense[] = [];
-	general_info: GeneralInfo|null = null;
-
 	constructor(pdfEl: HTMLElement) {
+		super();
 		this._pdfEl = pdfEl;
 		this._pages = this._pdfEl.getElementsByClassName("page");
 		this.getGeneralInfo();
 		this.getExpenses();
 	}
 
-	getGeneralInfo() {
+	public override getGeneralInfo(): GeneralInfo {
 		let total: number = -1;
 		let holder, card_name, due_at: string = '<none>';
 
@@ -60,9 +58,10 @@ export class Itaucard {
 		}
 
 		this.general_info = new GeneralInfo(holder, card_name, total, due_at);
+		return this.general_info;
 	}
 
-	getExpenses() {
+	override getExpenses(): Expense[] {
 		for(let i = 1; i < this._pages.length; i++) {
 			this.fetchPage(this._pages[i], i);
 		}
@@ -86,6 +85,8 @@ export class Itaucard {
 				}
 			}
 		}
+
+		return this.expenses;
 	}
 
 	fetchPage(page: any, index: number) {

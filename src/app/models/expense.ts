@@ -43,7 +43,7 @@ export class ExpenseCategory {
 		this.term = term;
 	}
 
-	applyToAllExpenses(expenses: Expense[]) {
+	applyToAllExpenses(expenses: Expense[], removal: boolean = false) {
 		if(this.term == null)
 			return;
 
@@ -68,8 +68,14 @@ export class ExpenseCategory {
 				break;
 			}
 			}
-			if(matched && !Utils.findById(exp.categories, this.uuid, 'uuid')) {
-				exp.categories.push(this);
+			let found = Utils.findById(exp.categories, this.uuid, 'uuid');
+			if(matched) {
+				if(removal && found) {
+					exp.categories.splice(exp.categories.indexOf(found), 1);
+				}
+				if(!removal && !found) {
+					exp.categories.push(this);
+				}
 			}
 		}
 	}
