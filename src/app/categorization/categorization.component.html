@@ -1,4 +1,3 @@
-<button mat-button mat-dialog-close cdkFocusInitial>Ok</button>
 <mat-accordion multi>
 	<!-- Cards panel -->
 	<mat-expansion-panel>
@@ -81,6 +80,46 @@
 
 			<tr mat-header-row *matHeaderRowDef="expenseColumns"></tr>
 			<tr mat-row *matRowDef="let row; columns: expenseColumns;" (click)="clickExpense(row)"  [class.success]="row.categories.length > 0"></tr>
+		</table>
+	</mat-expansion-panel>
+
+	<!-- Categories panel -->
+	<mat-expansion-panel>
+		<mat-expansion-panel-header>
+			<mat-panel-title>Categorias</mat-panel-title>
+			<mat-panel-description>Reveja os filtros que você criou</mat-panel-description>
+		</mat-expansion-panel-header>
+
+		<table *ngIf="categories.length > 0" mat-table [dataSource]="categories" style="cursor: pointer">
+			<!-- filter_type column -->
+			<ng-container matColumnDef="filter_type">
+				<th mat-header-cell *matHeaderCellDef>Tipo do filtro</th>
+				<td mat-cell *matCellDef="let el">
+					<span *ngIf="el.filter_type == 'match'">nome exato</span>
+					<span *ngIf="el.filter_type == 'begins_with'">começa com</span>
+					<span *ngIf="el.filter_type == 'ends_with'">termina com</span>
+					<span *ngIf="el.filter_type == 'contains'">contém</span>
+				</td>
+			</ng-container>
+
+			<!-- term column -->
+			<ng-container matColumnDef="term">
+				<th mat-header-cell *matHeaderCellDef>Nome</th>
+				<td mat-cell *matCellDef="let el">{{el.term}}</td>
+			</ng-container>
+
+			<!-- tag_as column -->
+			<ng-container matColumnDef="tag_as">
+				<th mat-header-cell *matHeaderCellDef>Categoria:</th>
+				<td mat-cell *matCellDef="let el">
+					<span *ngFor="let tag of el.tag_as">
+						{{tag}}<br/>
+					</span>
+				</td>
+			</ng-container>
+
+			<tr mat-header-row *matHeaderRowDef="categoriesColumns"></tr>
+			<tr mat-row *matRowDef="let row; columns: categoriesColumns;"></tr>
 		</table>
 	</mat-expansion-panel>
 </mat-accordion>

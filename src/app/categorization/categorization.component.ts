@@ -25,6 +25,7 @@ export class CategorizationComponent {
 
   cardColumns: string[] = ['holder', 'digits', 'total', 'active'];
   expenseColumns: string[] = ['date', 'place', 'value', 'installment', 'digits'];
+  categoriesColumns: string[] = ['filter_type', 'term', 'tag_as'];
   nCardsSelected: number = 0;
 
   categories: ExpenseCategory[] = [];
@@ -58,7 +59,9 @@ export class CategorizationComponent {
     if(res2) {
       let obj = JSON.parse(res2);
       this.categories = obj as ExpenseCategory[];
+      console.log(this.categories);
       for(let cat of this.categories) {
+        cat = new ExpenseCategory(cat.tag_as, cat.filter_type, cat.term || '<none>');
         if(this.itau)
           cat.applyToAllExpenses(this.itau.expenses);
         cat.applyToAllExpenses(this.auxExpenses);
@@ -98,6 +101,7 @@ export class CategorizationComponent {
     for(let i = 0; i < data.tag_as.length; i++) {
       if(data.tag_as[i].length == 0) {
         data.tag_as.splice(i,1);
+        i--;
       }
     }
     let cat = new ExpenseCategory(data.tag_as, data.filter, data.term);
