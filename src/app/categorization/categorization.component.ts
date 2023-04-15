@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CategoryDialog } from './category-dialog';
@@ -29,6 +29,7 @@ export class CategorizationComponent {
   nCardsSelected: number = 0;
 
   categories: ExpenseCategory[] = [];
+  refreshCat: boolean = false;
 
   constructor(public dialog: MatDialog,
     private router: Router,
@@ -60,11 +61,12 @@ export class CategorizationComponent {
       let obj = JSON.parse(res2);
       this.categories = obj as ExpenseCategory[];
       console.log(this.categories);
-      for(let cat of this.categories) {
-        cat = new ExpenseCategory(cat.tag_as, cat.filter_type, cat.term || '<none>');
+      for(let i = 0; i < this.categories.length; i++) {
+        let cat = this.categories[i]; // not instantiated
+        this.categories[i] = new ExpenseCategory(cat.tag_as, cat.filter_type, cat.term || '<none>');
         if(this.parser)
-          cat.applyToAllExpenses(this.parser.expenses);
-        cat.applyToAllExpenses(this.auxExpenses);
+          this.categories[i].applyToAllExpenses(this.parser.expenses);
+        this.categories[i].applyToAllExpenses(this.auxExpenses);
       }
     }
   }
@@ -108,7 +110,7 @@ export class CategorizationComponent {
     sessionStorage.setItem(this.key, JSON.stringify(this.parser));
   }
 
-  private _categoryCreated(data: {term: string, filter: FilterType, tag_as: string[]}) {
+  private _categoryCreated(data: {term: string, filter: FilterType, tag_as: string[]}, idx: number|null = null) {
     for(let i = 0; i < data.tag_as.length; i++) {
       if(data.tag_as[i].length == 0) {
         data.tag_as.splice(i,1);
@@ -116,30 +118,40 @@ export class CategorizationComponent {
       }
     }
     let cat = new ExpenseCategory(data.tag_as, data.filter, data.term);
-
+    if(idx != null) {
+      this.categories.splice(idx, 0, cat);
+    } else {
+      this.categories.push(cat);
+    }
     this._applyCategory(cat);
   }
   private _categoryEdited(uuid: string, data: {term: string, filter: FilterType, tag_as: string[], remove: boolean}) {
-    this._removeCategory(uuid);
+    let idx = this._removeCategory(uuid, !data.remove);
     if(!data.remove) {
-      this._categoryCreated(data);
+      this._categoryCreated(data, idx);
     }
   }
-  private _removeCategory(uuid: string) {
+  private _removeCategory(uuid: string, save: boolean = true): number {
     let cat: ExpenseCategory = Utils.findById(this.categories, uuid, 'uuid');
-    console.log(cat);
-    if(this.parser) {
-      cat.applyToAllExpenses(this.parser.expenses, true);
-    }
-    cat.applyToAllExpenses(this.auxExpenses, true);
+    let idx = this.categories.indexOf(cat);
+    this.categories.splice(idx, 1);
+    this._applyCategory(cat, true, save);
+    return idx;
   }
 
-  private _applyCategory(cat: ExpenseCategory) {
+  private _applyCategory(cat: ExpenseCategory, removal: boolean = false, save: boolean = true) {
     if(this.parser)
-      cat.applyToAllExpenses(this.parser.expenses);
+      cat.applyToAllExpenses(this.parser.expenses, removal);
 
-    cat.applyToAllExpenses(this.auxExpenses);
-    localStorage.setItem('categories', JSON.stringify(this.categories));
+    cat.applyToAllExpenses(this.auxExpenses, removal);
+
+    if(save)
+      localStorage.setItem('categories', JSON.stringify(this.categories));
+
+    this.refreshCat = true;
+    setTimeout(() => {
+      this.refreshCat = false;
+    }, 500);
   }
 
   private _cardChanges() {

@@ -90,7 +90,7 @@
 			<mat-panel-description>Reveja os filtros que você criou</mat-panel-description>
 		</mat-expansion-panel-header>
 
-		<table *ngIf="categories.length > 0" mat-table [dataSource]="categories" style="cursor: pointer">
+		<table *ngIf="categories.length > 0 && !refreshCat" mat-table [dataSource]="categories" style="cursor: pointer">
 			<!-- filter_type column -->
 			<ng-container matColumnDef="filter_type">
 				<th mat-header-cell *matHeaderCellDef>Tipo do filtro</th>
