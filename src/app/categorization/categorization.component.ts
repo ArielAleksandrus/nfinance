@@ -99,7 +99,8 @@ export class CategorizationComponent {
     });
   }
 
-  openExpenseDialog(exp: Expense) {
+  seeStats() {
+    this.router.navigate(['estatisticas', this.key]);
   }
 
   saveChanges() {

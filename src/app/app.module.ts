@@ -20,13 +20,15 @@ import { HomeComponent } from './home/home.component';
 import { CategorizationComponent } from './categorization/categorization.component';
 import { CategoryDialog } from './categorization/category-dialog';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { StatsComponent } from './stats/stats.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
     CategorizationComponent,
-    CategoryDialog
+    CategoryDialog,
+    StatsComponent
   ],
   imports: [
     BrowserModule,
