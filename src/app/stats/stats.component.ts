@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { ChartOptions } from 'chart.js';
 
 import { Parser } from '../parsers/parser';
 
 import { Card } from '../models/card';
 import { Expense, ExpenseCategory, FilterType } from '../models/expense';
+import { PieChart } from '../models/charts/pie-chart';
 
 import { Utils } from '../helpers/utils';
 
@@ -24,6 +26,7 @@ export class StatsComponent {
   cardStats: {
     card: Card,
     categorized: {
+      name: string,
       category: ExpenseCategory,
       expenses: Expense[],
       total: number
@@ -34,6 +37,13 @@ export class StatsComponent {
     expenses: Expense[],
     total: number
   }[] = [];
+
+  pieChartsCard: {card: Card, chart: PieChart}[] = [];
+  pieChartOptions: ChartOptions<'pie'> = {
+    responsive: false
+  };
+  pieChartPlugins = [];
+  pieChartLegend = true;
 
   constructor(private router: Router,
              private route: ActivatedRoute) {
@@ -77,9 +87,9 @@ export class StatsComponent {
     this.filterCategorized();
     this.getCardStats();
     this.getCatStats();
-
+    this._genPieChartCard();
     console.log(this.cardStats);
-    console.log(this.catStats);
+    console.log(this.pieChartsCard);
   }
 
   filterCategorized() {
@@ -108,6 +118,7 @@ export class StatsComponent {
         this.cardStats.push({
           card: card,
           categorized: [{
+            name: exp.categories[0].tag_as[0],
             category: exp.categories[0],
             expenses: [exp],
             total: exp.value
@@ -120,6 +131,7 @@ export class StatsComponent {
           foundCat.total += exp.value;
         } else {
           foundCard.categorized.push({
+            name: exp.categories[0].tag_as[0],
             category: exp.categories[0],
             expenses: [exp],
             total: exp.value
@@ -145,4 +157,16 @@ export class StatsComponent {
     }
   }
 
+  private _genPieChartCard() {
+    this.pieChartsCard = [];
+    for(let stat of this.cardStats) {
+      let chart = PieChart.fromArray(stat.categorized, 'name', 'total', 2);
+      let totalCategorized = 0;
+      for(let aux of stat.categorized) {
+        totalCategorized += aux.total;
+      }
+      chart.addValue('Sem Categoria', stat.card.total - totalCategorized);
+      this.pieChartsCard.push({card: stat.card, chart: chart});
+    }
+  }
 }

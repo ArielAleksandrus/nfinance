@@ -13,7 +13,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
 
-
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
@@ -21,6 +20,7 @@ import { CategorizationComponent } from './categorization/categorization.compone
 import { CategoryDialog } from './categorization/category-dialog';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { StatsComponent } from './stats/stats.component';
+import { NgChartsModule } from 'ng2-charts';
 
 @NgModule({
   declarations: [
@@ -44,7 +44,8 @@ import { StatsComponent } from './stats/stats.component';
     MatDialogModule,
     MatButtonModule,
     MatInputModule,
-    MatSelectModule
+    MatSelectModule,
+    NgChartsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -1,1 +1,19 @@
 <p>stats works!</p>
+<mat-accordion multi>
+	<!-- Card stats panel -->
+	<mat-expansion-panel *ngFor="let stat of cardStats; let i = index">
+		<mat-expansion-panel-header>
+			<mat-panel-title>Final {{stat.card.digits}}</mat-panel-title>
+			<mat-panel-description>{{stat.card.holder}}</mat-panel-description>
+		</mat-expansion-panel-header>
+
+		<canvas baseChart
+		  [type]="'pie'"
+		  [datasets]="pieChartsCard[i].chart.datasets"
+		  [labels]="pieChartsCard[i].chart.labels"
+		  [options]="pieChartOptions"
+		  [plugins]="pieChartPlugins"
+		  [legend]="pieChartLegend">
+		</canvas>
+	</mat-expansion-panel>
+</mat-accordion>

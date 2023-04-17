@@ -60,7 +60,6 @@ export class CategorizationComponent {
     if(res2) {
       let obj = JSON.parse(res2);
       this.categories = obj as ExpenseCategory[];
-      console.log(this.categories);
       for(let i = 0; i < this.categories.length; i++) {
         let cat = this.categories[i]; // not instantiated
         this.categories[i] = new ExpenseCategory(cat.tag_as, cat.filter_type, cat.term || '<none>');
