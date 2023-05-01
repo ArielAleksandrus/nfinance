@@ -1,10 +1,31 @@
+export type PIE_DATASET = {
+	data: number[],
+	label?: string,
+	borderColor?: string,
+	backgroundColor?: string
+};
 export class PieChart {
 	values: number[];
 	labels: string[];
 	maxDecimals: number|null;
 
 	// set by our class
-	datasets: {data: number[]}[];
+	datasets: PIE_DATASET[];
+
+	private _buildDatasets() {
+		for(let i = 0; i < this.labels.length; i++) {
+			let ds: PIE_DATASET = {
+				label: this.labels[i],
+				data: [this.values[i]]
+			};
+			if(this.labels[i] == "Sem Categoria") {
+				ds.borderColor = "#EAEAEA";
+				ds.backgroundColor = "#F0F2F4"
+			}
+			this.datasets.push();
+		}
+		//this.datasets = [{data: this.values}];
+	}
 
 	constructor(values: number[], labels: string[], maxDecimals: number|null = null) {
 		this.labels = labels;
@@ -18,7 +39,8 @@ export class PieChart {
 		} else {
 			this.values = values;
 		}
-		this.datasets = [{data: this.values}];
+		this.datasets = [];
+		this._buildDatasets();
 	}
 
 	addValue(label: string, value: number) {
