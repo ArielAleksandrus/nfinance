@@ -1,7 +1,9 @@
 import { Component, ViewChild } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CategoryDialog } from './category-dialog';
+
 
 import { Parser } from '../parsers/parser';
 
@@ -9,6 +11,7 @@ import { Card } from '../models/card';
 import { Expense, ExpenseCategory, FilterType } from '../models/expense';
 
 import { Utils } from '../helpers/utils';
+import { Environment } from '../../environment';
 
 @Component({
   selector: 'app-categorization',
@@ -33,7 +36,8 @@ export class CategorizationComponent {
 
   constructor(public dialog: MatDialog,
     private router: Router,
-    private route: ActivatedRoute) {
+    private route: ActivatedRoute,
+    private http: HttpClient) {
 
     route.params.subscribe(res => {
         this.key = res["key"];
@@ -124,6 +128,19 @@ export class CategorizationComponent {
       this.categories.push(cat);
     }
     this._applyCategory(cat);
+
+    this.http.post(Environment.api_url + '/storetags', {
+      storetag: {
+        term: data.term,
+        pattern_type: data.filter,
+        main_tag: data.tag_as[0]
+      }
+    }).subscribe(res => {
+      alert("Filtro salvo com sucesso!");
+    }, err => {
+      console.log(err);
+      alert("Erro ao salvar filtro");
+    });
   }
   private _categoryEdited(uuid: string, data: {term: string, filter: FilterType, tag_as: string[], remove: boolean}) {
     let idx = this._removeCategory(uuid, !data.remove);
@@ -138,7 +155,6 @@ export class CategorizationComponent {
     this._applyCategory(cat, true, save);
     return idx;
   }
-
   private _applyCategory(cat: ExpenseCategory, removal: boolean = false, save: boolean = true) {
     if(this.parser)
       cat.applyToAllExpenses(this.parser.expenses, removal);

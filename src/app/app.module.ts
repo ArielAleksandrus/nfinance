@@ -2,6 +2,8 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+
 
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -35,6 +37,7 @@ import { NgChartsModule } from 'ng2-charts';
     AppRoutingModule,
     PdfViewerModule,
     FormsModule,
+    HttpClientModule,
 
     BrowserAnimationsModule,
     MatCardModule,
